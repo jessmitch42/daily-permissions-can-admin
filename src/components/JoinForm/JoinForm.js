@@ -14,8 +14,8 @@ export default function JoinForm({ handleSubmitForm }) {
           placeholder="https://your-domain.daily.co/room-name"
           required
         />
-        <div class="row">
-          <label class="checkbox-label" htmlFor="owner">
+        <div className="row">
+          <label className="checkbox-label" htmlFor="owner">
             Join as an owner?
           </label>
           <input id="owner" type="checkbox" />
