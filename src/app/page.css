@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: center;
   padding: 6rem;
   min-height: 100vh;
   font-family: Arial, Helvetica, sans-serif;
@@ -18,29 +17,12 @@
   justify-content: center;
   align-items: center;
   position: relative;
-  padding: 4rem 0;
+  padding: 2rem 0;
 }
 
-.center::before {
-  background: var(--secondary-glow);
-  border-radius: 50%;
-  width: 480px;
-  height: 360px;
-  margin-left: -400px;
-}
-
-.center::after {
-  background: var(--primary-glow);
-  width: 240px;
-  height: 180px;
-  z-index: -1;
-}
-
-h1 {
-  margin: 1rem 0;
-}
-
-h2 {
+h1,
+h2,
+h3 {
   margin: 1rem 0;
 }
 
