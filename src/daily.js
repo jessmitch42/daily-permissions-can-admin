@@ -2,9 +2,7 @@ const createRoom = async () => {
   const roomRes = await fetch("/api/rooms", {
     method: "POST",
     body: JSON.stringify({
-      privacy: "private",
       properties: {
-        enable_knocking: true,
         enable_prejoin_ui: false,
         start_audio_off: true,
       },

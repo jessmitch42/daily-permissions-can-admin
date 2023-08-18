@@ -1,11 +1,11 @@
 import "./admin-panel.css";
 
-const ParticipantListItem = ({ p, makeAdmin, removeFromCall }) => (
+const ParticipantListItem = ({ p, makeAdmin, removeFromCall, isOwner }) => (
   <li>
     <span>
       {p.session_id}: {p.user_name}
     </span>{" "}
-    {!p.local && (
+    {!p.local && isOwner && (
       <span>
         <button onClick={makeAdmin}>Make admin</button>
         <button className="red-button" onClick={removeFromCall}>
@@ -26,11 +26,14 @@ export default function AdminPanel({
   return (
     <div className="admin-panel">
       {isOwner ? (
-        <h3>You are a meeting owner.</h3>
+        <h3>
+          Participant list - You are a meeting owner and can remove others or
+          make them admins
+        </h3>
       ) : (
         <p>
-          You are a call attendee. This section will update if a meeting owner
-          gives you admin privileges.
+          You are a call attendee. If a meeting owner gives you admin
+          privileges, additional actions will become available.
         </p>
       )}
 

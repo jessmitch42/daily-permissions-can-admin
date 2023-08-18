@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import DailyIframe from "@daily-co/daily-js";
 import JoinForm from "../JoinForm/JoinForm";
 import AdminPanel from "../AdminPanel/AdminPanel";
@@ -6,6 +7,7 @@ import { api } from "../../daily";
 import "./daily-container.css";
 
 export default function DailyContainer() {
+  const searchParams = useSearchParams();
   const containerRef = useRef(null);
   const [callFrame, setCallFrame] = useState(null);
   const [url, setUrl] = useState(null);
@@ -13,6 +15,14 @@ export default function DailyContainer() {
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [participants, setParticipants] = useState({});
+
+  useEffect(() => {
+    console.log(searchParams);
+    const urlParam = searchParams.get("url");
+    if (urlParam) {
+      setUrl(urlParam);
+    }
+  }, [searchParams]);
 
   const handleJoinedMeeting = (e) => {
     console.log(e);
@@ -111,7 +121,6 @@ export default function DailyContainer() {
         width: "100%",
         height: "100%",
       },
-      showLeaveButton: true,
     });
 
     addDailyEvents(dailyCallFrame);
@@ -148,61 +157,94 @@ export default function DailyContainer() {
     }
   };
 
-  const handleSubmitJoinForm = async (e) => {
-    e.preventDefault();
-    const { name: n, owner } = e.target;
-    const name = n.value;
-    const isOwner = owner.checked;
+  const createNewRoom = async () => {
     const newRoom = await api.createRoom();
     console.log(newRoom);
     if (!newRoom.url) {
       console.error("Room could not be created. Please try again.");
-      return;
+      return null;
     }
-    const roomName = newRoom.name;
+    return newRoom;
+  };
 
-    const newToken = await createToken({ isOwner, roomName });
-    if (!newToken) {
-      console.error("Token could not be created. Exiting room join.");
-      return;
+  const handleSubmitJoinForm = async (e) => {
+    e.preventDefault();
+    const { target } = e;
+    let options = { name: target.name.value };
+
+    // Use the existing room supplied in the query param if it's provided (or create a new room)
+    const existingRoomUrl = target?.url?.value;
+    if (target?.url?.value) {
+      options.url = existingRoomUrl;
+      options.roomName = existingRoomUrl.split(".co/")[1];
+      options.isOwner = false;
+    } else {
+      // Create a new Daily room when the form is submitted
+      const newRoom = await createNewRoom();
+      if (!newRoom) return; // error is thrown in createNewRoom
+      options.url = newRoom.url;
+      options.roomName = newRoom.name;
+      options.isOwner = true;
+
+      // Create an owner meeting token
+      const newToken = await createToken({ roomName: newRoom.name });
+      if (!newToken) return; // error is thrown in createToken
+      options.token = newToken;
     }
-    console.log(newToken, name);
 
-    joinRoom({ name, url: newRoom.url, token: newToken, isOwner });
+    joinRoom(options);
   };
 
   const removeFromCall = () => {
     console.log("remove from call");
   };
 
-  const makeAdmin = () => {
-    console.log("make admin");
-  };
+  const makeAdmin = useCallback(
+    (participantId) => {
+      console.log("make admin");
+      // https://docs.daily.co/reference/daily-js/instance-methods/update-participant#permissions
+      callFrame.updateParticipant(participantId, {
+        updatePermissions: {
+          canAdmin: new Set(["participants"]),
+        },
+      });
+    },
+    [callFrame]
+  );
+
+  const leaveCall = useCallback(() => {
+    // https://docs.daily.co/reference/daily-js/instance-methods/leave
+    callFrame.leave();
+  }, [callFrame]);
+
+  const localLink = useCallback(
+    () => `http://localhost:3000/?url=${url}`,
+    [url]
+  );
 
   return (
     <div className="daily-container">
       {!callFrame && !submitting && (
         <>
-          <h3>Join the call as an owner or attendee.</h3>
-          <p>
-            If you join as an owner, you can share admin privileges with others.
-          </p>
-          <p>(Note: A new Daily room will be created for you when you join.)</p>
-          <JoinForm handleSubmitForm={handleSubmitJoinForm} />
+          <h3>Create a new Daily room and join as an owner.</h3>
+          <JoinForm handleSubmitForm={handleSubmitJoinForm} url={url} />
         </>
       )}
       {submitting && <p>Loading...</p>}
-      <div>
-        {url && (
-          <>
+      {callFrame && (
+        <div className="call-header">
+          <div>
             {" "}
-            <p>Share this link to let others join:</p>{" "}
-            <a href={url} target="_blank" rel="noopener noreferrer">
-              {url}
+            <span>Share this link to let others join:</span>{" "}
+            <a href={localLink()} target="_blank" rel="noopener noreferrer">
+              {localLink()}
             </a>
-          </>
-        )}
-      </div>
+          </div>
+          <button className="red-button" onClick={leaveCall}>
+            Leave call
+          </button>
+        </div>
+      )}
       {error && <p>Error message: {error}</p>}
       <div className="call" ref={containerRef}></div>
       {callFrame && (

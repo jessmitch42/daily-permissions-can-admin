@@ -7,6 +7,6 @@ button {
   cursor: pointer;
 }
 
-.red-button {
-  color: red;
+li {
+  list-style: inside;
 }
