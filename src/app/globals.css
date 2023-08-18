@@ -29,7 +29,10 @@ body {
   color: var(--black);
 }
 
-h1,
+h1 {
+  margin: 1rem 0;
+}
+
 h2,
 h3 {
   margin: 0.75rem 0;
