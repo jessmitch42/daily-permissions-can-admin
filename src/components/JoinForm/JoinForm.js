@@ -1,7 +1,6 @@
 import "./join-form.css";
 
 export default function JoinForm({ handleSubmitForm, url }) {
-  console.log(url);
   return (
     <div>
       <form className="join-form" onSubmit={handleSubmitForm}>
@@ -16,7 +15,7 @@ export default function JoinForm({ handleSubmitForm, url }) {
               type="url"
               pattern="https://.*"
               placeholder="https://your-domain.daily.co/room-name"
-              required
+              disabled
             />
           </>
         )}

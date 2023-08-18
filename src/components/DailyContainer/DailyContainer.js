@@ -15,9 +15,13 @@ export default function DailyContainer() {
   const [error, setError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [participants, setParticipants] = useState({});
+  const prevParticipants = useRef();
 
   useEffect(() => {
-    console.log(searchParams);
+    prevParticipants.current = participants;
+  }, [participants]);
+
+  useEffect(() => {
     const urlParam = searchParams.get("url");
     if (urlParam) {
       setUrl(urlParam);
@@ -25,7 +29,7 @@ export default function DailyContainer() {
   }, [searchParams]);
 
   const handleJoinedMeeting = (e) => {
-    console.log(e);
+    console.log(e.action);
     setParticipants((participants) => ({
       ...participants,
       [e.participants.local.session_id]: e.participants.local,
@@ -33,8 +37,7 @@ export default function DailyContainer() {
   };
 
   const handleParticipantJoined = (e) => {
-    console.log(e);
-    console.log(participants);
+    console.log(e.action);
     setParticipants((participants) => ({
       ...participants,
       [e.participant.session_id]: e.participant,
@@ -42,25 +45,28 @@ export default function DailyContainer() {
   };
 
   const handleParticipantUpdate = (e) => {
-    console.log(e);
-    // Return early if the participant list isn't set yet.
-    // This event is sometimes emitted before the joined-meeting event.
-    if (!participants[e.participant.session_id]) return;
+    console.log(e.action);
+    // // Return early if the participant list isn't set yet.
+    // // This event is sometimes emitted before the joined-meeting event.
+    if (!prevParticipants.current[e.participant.session_id]) return;
     // Only update the participants list if the permission has changed.
     // Daily Prebuilt handles all other call changes for us.
     if (
-      participants[e.participant.session_id].permissions.canAdmin !==
-      e.participant.permissions.canAdmin
+      prevParticipants.current[e.participant.session_id].permissions
+        .canAdmin !== e.participant.permissions.canAdmin
     ) {
       setParticipants((participants) => ({
         ...participants,
         [e.participant.session_id]: e.participant,
       }));
+      if (e.participant.local) {
+        setIsOwner(e.participant.permissions.canAdmin);
+      }
     }
   };
 
   const handleParticipantLeft = (e) => {
-    console.log(e);
+    console.log(e.action);
     setParticipants((participants) => {
       const currentParticipants = { ...participants };
       delete currentParticipants[e.participant.session_id];
@@ -70,16 +76,11 @@ export default function DailyContainer() {
 
   const handleLeftMeeting = useCallback(
     (e) => {
-      console.log(e);
-      if (callFrame) {
-        removeDailyEvents(callFrame);
-        callFrame.destroy();
-      }
+      console.log(e.action);
+
       //Reset state
       setCallFrame(null);
-      setUrl(null);
       setIsOwner(false);
-      setError(null);
       setSubmitting(false);
       setParticipants({});
     },
@@ -87,7 +88,7 @@ export default function DailyContainer() {
   );
 
   const handleError = (e) => {
-    console.log(e);
+    console.log(e.action);
     setError(e.errorMsg);
   };
 
@@ -113,7 +114,7 @@ export default function DailyContainer() {
   };
 
   const joinRoom = async ({ name, url, token, isOwner }) => {
-    console.log(name, url, token);
+    name, url, token;
     const callContainerDiv = containerRef.current;
     // https://docs.daily.co/reference/daily-js/factory-methods/create-frame
     const dailyCallFrame = DailyIframe.createFrame(callContainerDiv, {
@@ -159,7 +160,6 @@ export default function DailyContainer() {
 
   const createNewRoom = async () => {
     const newRoom = await api.createRoom();
-    console.log(newRoom);
     if (!newRoom.url) {
       console.error("Room could not be created. Please try again.");
       return null;
@@ -169,6 +169,8 @@ export default function DailyContainer() {
 
   const handleSubmitJoinForm = async (e) => {
     e.preventDefault();
+    // Clear previous error
+    setError(null);
     const { target } = e;
     let options = { name: target.name.value };
 
@@ -187,7 +189,10 @@ export default function DailyContainer() {
       options.isOwner = true;
 
       // Create an owner meeting token
-      const newToken = await createToken({ roomName: newRoom.name });
+      const newToken = await createToken({
+        roomName: newRoom.name,
+        isOwner: true,
+      });
       if (!newToken) return; // error is thrown in createToken
       options.token = newToken;
     }
@@ -195,17 +200,22 @@ export default function DailyContainer() {
     joinRoom(options);
   };
 
-  const removeFromCall = () => {
-    console.log("remove from call");
-  };
+  const removeFromCall = useCallback(
+    (participantId) => {
+      // https://docs.daily.co/reference/daily-js/instance-methods/update-participant#setaudio-setvideo-and-eject
+      callFrame.updateParticipant(participantId, {
+        eject: true,
+      });
+    },
+    [callFrame]
+  );
 
   const makeAdmin = useCallback(
     (participantId) => {
-      console.log("make admin");
       // https://docs.daily.co/reference/daily-js/instance-methods/update-participant#permissions
       callFrame.updateParticipant(participantId, {
         updatePermissions: {
-          canAdmin: new Set(["participants"]),
+          canAdmin: true,
         },
       });
     },
@@ -215,7 +225,9 @@ export default function DailyContainer() {
   const leaveCall = useCallback(() => {
     // https://docs.daily.co/reference/daily-js/instance-methods/leave
     callFrame.leave();
-  }, [callFrame]);
+    removeDailyEvents(callFrame);
+    callFrame.destroy();
+  }, [callFrame, removeDailyEvents]);
 
   const localLink = useCallback(
     () => `http://localhost:3000/?url=${url}`,
@@ -224,7 +236,12 @@ export default function DailyContainer() {
 
   return (
     <div className="daily-container">
-      {!callFrame && !submitting && (
+      {error && (
+        <p className="error-msg">
+          Error message: {error}. Refresh to start over.
+        </p>
+      )}
+      {!callFrame && !submitting && !error && (
         <>
           <h3>Create a new Daily room and join as an owner.</h3>
           <JoinForm handleSubmitForm={handleSubmitJoinForm} url={url} />
@@ -232,29 +249,38 @@ export default function DailyContainer() {
       )}
       {submitting && <p>Loading...</p>}
       {callFrame && (
-        <div className="call-header">
-          <div>
-            {" "}
+        <>
+          <p>
             <span>Share this link to let others join:</span>{" "}
             <a href={localLink()} target="_blank" rel="noopener noreferrer">
               {localLink()}
             </a>
-          </div>
-          <button className="red-button" onClick={leaveCall}>
-            Leave call
-          </button>
-        </div>
+          </p>
+          <p>
+            External Daily room URL:{" "}
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              {url}
+            </a>
+          </p>
+        </>
       )}
-      {error && <p>Error message: {error}</p>}
-      <div className="call" ref={containerRef}></div>
+
       {callFrame && (
-        <AdminPanel
-          participants={participants}
-          isOwner={isOwner}
-          makeAdmin={makeAdmin}
-          removeFromCall={removeFromCall}
-        />
+        <>
+          <AdminPanel
+            participants={participants}
+            isOwner={isOwner}
+            makeAdmin={makeAdmin}
+            removeFromCall={removeFromCall}
+          />
+          <div className="call-header">
+            <button className="red-button" onClick={leaveCall}>
+              Leave this call
+            </button>
+          </div>
+        </>
       )}
+      <div className="call" ref={containerRef}></div>
     </div>
   );
 }

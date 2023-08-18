@@ -18,7 +18,6 @@ export default async function handler(req, res) {
         );
 
         const token = await dailyTokenRes.json();
-        console.log(token);
         res.status(200).json({ token });
         break;
       default:

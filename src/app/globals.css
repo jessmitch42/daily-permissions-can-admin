@@ -5,9 +5,14 @@
     "Roboto Mono", "Oxygen Mono", "Ubuntu Monospace", "Source Code Pro",
     "Fira Mono", "Droid Sans Mono", "Courier New", monospace;
 
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --white: #fff;
+  --red: #d42121;
+  --red-secondary: #f0d4d4;
+  --mint: #1bebb9;
+  --grey: #c8d1dc;
+  --grey--secondary: #6b7785;
+  --mint-secondary: #468f7e;
+  --black: #000;
 }
 
 * {
@@ -21,9 +26,15 @@ body {
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
+  color: var(--black);
 }
 
-a {
-  /* todo: color: inherit; */
+h1,
+h2,
+h3 {
+  margin: 0.75rem 0;
+}
+
+p {
+  margin: 0.5rem 0;
 }

@@ -9,7 +9,6 @@ const createRoom = async () => {
     }),
   });
   const { room } = await roomRes.json();
-  console.log(room);
   if (roomRes.status !== 200) {
     throw new Error(room.error);
   }
@@ -17,7 +16,6 @@ const createRoom = async () => {
 };
 
 const createToken = async ({ isOwner, roomName }) => {
-  console.log(isOwner, roomName);
   const expiry = Math.round(Date.now() / 1000) + 60 * 60;
   const tokenRes = await fetch("/api/tokens", {
     method: "POST",
