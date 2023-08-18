@@ -126,8 +126,6 @@ export default function DailyContainer() {
 
     addDailyEvents(dailyCallFrame);
 
-    // todo: add event handling for errors, left-meeting
-
     const options = { userName: name, url };
     if (token) {
       setIsOwner(isOwner);
@@ -152,7 +150,6 @@ export default function DailyContainer() {
     if (token) {
       return token;
     } else {
-      // todo: show error message
       console.error("Token creation failed.");
       return null;
     }
