@@ -6,3 +6,7 @@ button {
   background-color: #1bebb9;
   cursor: pointer;
 }
+
+.red-button {
+  color: red;
+}

@@ -61,8 +61,10 @@ export default function DailyContainer() {
   const handleLeftMeeting = useCallback(
     (e) => {
       console.log(e);
-      removeDailyEvents(callFrame);
-      callFrame.destroy();
+      if (callFrame) {
+        removeDailyEvents(callFrame);
+        callFrame.destroy();
+      }
       //Reset state
       setCallFrame(null);
       setUrl(null);
@@ -80,6 +82,7 @@ export default function DailyContainer() {
   };
 
   const addDailyEvents = (callFrame) => {
+    // https://docs.daily.co/reference/daily-js/events
     callFrame
       .on("joined-meeting", handleJoinedMeeting)
       .on("participant-joined", handleParticipantJoined)
@@ -99,10 +102,10 @@ export default function DailyContainer() {
       .off("error", handleError);
   };
 
-  const createAndJoinRoom = async ({ name, url, token, isOwner }) => {
+  const joinRoom = async ({ name, url, token, isOwner }) => {
     console.log(name, url, token);
     const callContainerDiv = containerRef.current;
-
+    // https://docs.daily.co/reference/daily-js/factory-methods/create-frame
     const dailyCallFrame = DailyIframe.createFrame(callContainerDiv, {
       iframeStyle: {
         width: "100%",
@@ -123,6 +126,7 @@ export default function DailyContainer() {
 
     setSubmitting(true);
     try {
+      // https://docs.daily.co/reference/daily-js/instance-methods/join
       await dailyCallFrame.join(options);
       setCallFrame(dailyCallFrame);
       setUrl(url);
@@ -146,21 +150,35 @@ export default function DailyContainer() {
 
   const handleSubmitJoinForm = async (e) => {
     e.preventDefault();
-    const { name: n, url: u, owner: o } = e.target;
+    const { name: n, owner } = e.target;
     const name = n.value;
-    const url = u.value;
-    // the room name is the path in the url (domain.daily.co/room-name)
-    const roomName = url.split(".co/")[1];
     const isOwner = owner.checked;
+    const newRoom = await api.createRoom();
+    console.log(newRoom);
+    if (!newRoom.url) {
+      console.error("Room could not be created. Please try again.");
+      return;
+    }
+    const roomName = newRoom.name;
 
     const newToken = await createToken({ isOwner, roomName });
     if (!newToken) {
-      console.error("token failed, exiting room join.");
+      console.error("Token could not be created. Exiting room join.");
       return;
     }
+    console.log(newToken, name);
 
-    createAndJoinRoom({ name, url, token: newToken, isOwner });
+    joinRoom({ name, url: newRoom.url, token: newToken, isOwner });
   };
+
+  const removeFromCall = () => {
+    console.log("remove from call");
+  };
+
+  const makeAdmin = () => {
+    console.log("make admin");
+  };
+
   return (
     <div className="daily-container">
       {!callFrame && !submitting && (
@@ -169,6 +187,7 @@ export default function DailyContainer() {
           <p>
             If you join as an owner, you can share admin privileges with others.
           </p>
+          <p>(Note: A new Daily room will be created for you when you join.)</p>
           <JoinForm handleSubmitForm={handleSubmitJoinForm} />
         </>
       )}
@@ -186,12 +205,13 @@ export default function DailyContainer() {
       </div>
       {error && <p>Error message: {error}</p>}
       <div className="call" ref={containerRef}></div>
-      {callFrame && isOwner && <AdminPanel participants={participants} />}
-      {callFrame && !isOwner && (
-        <p>
-          You are a call attendee. This section will update if a meeting owner
-          gives you admin privileges.
-        </p>
+      {callFrame && (
+        <AdminPanel
+          participants={participants}
+          isOwner={isOwner}
+          makeAdmin={makeAdmin}
+          removeFromCall={removeFromCall}
+        />
       )}
     </div>
   );

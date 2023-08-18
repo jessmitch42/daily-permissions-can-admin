@@ -6,14 +6,6 @@ export default function JoinForm({ handleSubmitForm }) {
       <form className="join-form" onSubmit={handleSubmitForm}>
         <label htmlFor="name">Your name</label>
         <input id="name" type="text" />
-        <label htmlFor="url">Daily room URL</label>
-        <input
-          id="url"
-          type="url"
-          pattern="https://.*"
-          placeholder="https://your-domain.daily.co/room-name"
-          required
-        />
         <div className="row">
           <label className="checkbox-label" htmlFor="owner">
             Join as an owner?

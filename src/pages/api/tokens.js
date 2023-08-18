@@ -1,11 +1,10 @@
 export default async function handler(req, res) {
-  console.log("hi");
-  const { roomName, exp, isOwner } = JSON.parse(req.body);
-  console.log(roomName, exp);
   try {
     switch (req.method) {
       case "POST":
-        // create token
+        const options = JSON.parse(req.body);
+        // Make request to Daily's REST API /meeting-tokens endpoint
+        // https://docs.daily.co/reference/rest-api/meeting-tokens/create-meeting-token
         const dailyTokenRes = await fetch(
           "https://api.daily.co/v1/meeting-tokens",
           {
@@ -14,12 +13,12 @@ export default async function handler(req, res) {
               "Content-Type": "application/json",
               Authorization: "Bearer " + process.env.DAILY_API_KEY,
             },
-            body: JSON.stringify({
-              properties: { room_name: roomName, exp, is_owner: isOwner },
-            }),
+            body: JSON.stringify(options),
           }
         );
-        const { token } = await dailyTokenRes.json();
+
+        const token = await dailyTokenRes.json();
+        console.log(token);
         res.status(200).json({ token });
         break;
       default:
