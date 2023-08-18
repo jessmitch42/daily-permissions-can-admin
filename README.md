@@ -7,7 +7,7 @@ This demo app shows how to use the `canAdmin` option to allow an admin to make a
 
 With this demo app, admins can click a button next to non-admins' names to make them an admin. Admins can also test their admin privileges by ejecting participants (non-admins) from the call via a button.
 
-Admins _cannot_ eject or remove other admins from the call.
+Admins _cannot_ eject or remove other admins from the call. Non-admins can see the participant list but do not see the "Make admin" or "Remove from call" buttons.
 ![Non-admin view in-call](./public/nonadmin.png)
 
 This app uses [Daily Prebuilt](https://www.daily.co/products/prebuilt-video-call-app/) and [Next.js](https://nextjs.org/).
